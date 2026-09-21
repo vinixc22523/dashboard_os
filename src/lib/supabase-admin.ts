@@ -16,6 +16,13 @@ function createAdminClient() {
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      // O Next.js/Vercel intercepta o fetch global e pode cachear as
+      // respostas da API REST do Supabase, mesmo em rotas dinâmicas. Sem
+      // isso, o painel podia continuar mostrando um snapshot antigo (ou
+      // vazio) depois de uma sincronização nova.
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
   });
 }
 
