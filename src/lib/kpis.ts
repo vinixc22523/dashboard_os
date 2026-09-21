@@ -67,10 +67,16 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
     const start = parseDate(startRaw) ?? parseDate(card.createdAt);
     const end = parseDate(endRaw) ?? (card.finishedAt ? parseDate(card.finishedAt) : null);
 
+    // Teto de sanidade: 30 dias contínuos de máquina parada já é um valor
+    // extremo para uma única OS. Isso protege o painel contra erro de
+    // digitação de data no Pipefy (ex.: alguém digitar o ano "0202" em vez
+    // de "2026"), que senão inflaria MTTR/downtime para milhares de anos.
+    const MAX_PLAUSIBLE_DOWNTIME_HOURS = 24 * 30;
     let downtimeHours = 0;
     if (stopped && start && end) {
       const diff = (end.getTime() - start.getTime()) / 3_600_000;
-      downtimeHours = diff > 0 && Number.isFinite(diff) ? Math.round(diff * 1000) / 1000 : 0;
+      const plausible = diff > 0 && Number.isFinite(diff) && diff <= MAX_PLAUSIBLE_DOWNTIME_HOURS;
+      downtimeHours = plausible ? Math.round(diff * 1000) / 1000 : 0;
     }
 
     const osNumber = card.title.match(/\d+/)?.[0] ?? card.id;
