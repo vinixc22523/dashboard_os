@@ -47,18 +47,26 @@ export async function getDashboardPayload(): Promise<DashboardPayload> {
   const token = process.env.PIPEFY_API_TOKEN;
   const configured = Boolean(pipeId && token);
 
+  console.log(
+    `[dashboard-data] pipeId=${pipeId ? "set" : "null"} token=${token ? "set" : "null"} configured=${configured}`,
+  );
+
   if (!configured) {
     return { configured: false, demo: true, pipeId, snapshot: buildDemoSnapshot() };
   }
 
   try {
-    const { data, error } = await supabaseAdmin()
+    const { data, error, status, statusText } = await supabaseAdmin()
       .from("pipefy_snapshots")
       .select("*")
       .eq("status", "success")
       .order("synced_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    console.log(
+      `[dashboard-data] query status=${status} statusText=${statusText} error=${error ? JSON.stringify(error) : "null"} dataFound=${Boolean(data)}`,
+    );
 
     if (error || !data) {
       // Configurado mas ainda sem nenhuma sincronização bem-sucedida: mostra
