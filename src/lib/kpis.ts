@@ -101,18 +101,46 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
   });
 }
 
+// Estima quantas horas de calendário o conjunto de registros cobre, a partir
+// da data mais antiga até a mais recente (criação ou conclusão). Usado como
+// base de "horas de operação" quando nenhum valor fixo é informado, para que
+// disponibilidade/MTBF continuem fazendo sentido tanto filtrando um mês
+// quanto olhando todo o histórico.
+function estimateOperatingHours(records: MaintenanceRecord[]): number {
+  if (!records.length) return DEFAULT_OPERATING_HOURS;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const r of records) {
+    const created = new Date(r.createdAt).getTime();
+    if (Number.isFinite(created)) {
+      min = Math.min(min, created);
+      max = Math.max(max, created);
+    }
+    if (r.endedAt) {
+      const ended = new Date(r.endedAt).getTime();
+      if (Number.isFinite(ended)) max = Math.max(max, ended);
+    }
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return DEFAULT_OPERATING_HOURS;
+  const spanHours = (max - min) / 3_600_000;
+  return Math.max(spanHours, DEFAULT_OPERATING_HOURS);
+}
+
 export function computeMaintenanceKpis(
   records: MaintenanceRecord[],
-  operatingHours = DEFAULT_OPERATING_HOURS,
+  operatingHours?: number,
 ): MaintenanceKpis {
+  const resolvedOperatingHours = operatingHours ?? estimateOperatingHours(records);
   const totalOs = records.length;
   const failures = records.filter((r) => r.stopped);
   const downtime = failures.reduce((sum, r) => sum + r.downtimeHours, 0);
   const mttr = failures.length ? downtime / failures.length : 0;
   // MTBF = tempo disponível / número de falhas.
-  const upTime = Math.max(operatingHours - downtime, 0);
-  const mtbf = failures.length ? upTime / failures.length : operatingHours;
-  const availability = operatingHours > 0 ? (upTime / operatingHours) * 100 : 100;
+  const upTime = Math.max(resolvedOperatingHours - downtime, 0);
+  const mtbf = failures.length ? upTime / failures.length : resolvedOperatingHours;
+  const availability =
+    resolvedOperatingHours > 0 ? (upTime / resolvedOperatingHours) * 100 : 100;
+  const operatingHoursRounded = Math.round(resolvedOperatingHours);
 
   return {
     totalOs,
@@ -121,7 +149,7 @@ export function computeMaintenanceKpis(
     mttr: Math.round(mttr * 10) / 10,
     mtbf: Math.round(mtbf * 10) / 10,
     availability: Math.round(availability * 10) / 10,
-    operatingHours,
+    operatingHours: operatingHoursRounded,
   };
 }
 
@@ -139,9 +167,14 @@ export function metricsBy(
     groups.set(key, list);
   }
 
+  // Todos os grupos usam a mesma base de horas (o período coberto pelo
+  // conjunto completo), para que a disponibilidade de cada equipamento ou
+  // técnico seja comparável entre si.
+  const sharedOperatingHours = computeMaintenanceKpis(records).operatingHours;
+
   return [...groups.entries()]
     .map(([equipment, list]) => {
-      const kpis = computeMaintenanceKpis(list, DEFAULT_OPERATING_HOURS);
+      const kpis = computeMaintenanceKpis(list, sharedOperatingHours);
       return {
         equipment,
         os: list.length,
