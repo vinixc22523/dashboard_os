@@ -32,7 +32,7 @@ export function CardsTable({ records }: { records: MaintenanceRecord[] }) {
   return (
     <div className="glass rise-in rounded-2xl p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-slate-200">
+        <h3 className="text-sm font-medium text-foreground">
           Chamados <span className="text-muted">({filtered.length})</span>
         </h3>
         <input
@@ -42,7 +42,7 @@ export function CardsTable({ records }: { records: MaintenanceRecord[] }) {
             setPage(0);
           }}
           placeholder="Buscar por OS, equipamento, técnico…"
-          className="w-64 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-primary/50"
+          className="w-64 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary/50"
         />
       </div>
 
@@ -62,7 +62,7 @@ export function CardsTable({ records }: { records: MaintenanceRecord[] }) {
           <tbody>
             {pageItems.map((r) => (
               <tr key={r.id}>
-                <td className="font-medium text-slate-200">{r.osNumber}</td>
+                <td className="font-medium text-foreground">{r.osNumber}</td>
                 <td>{r.equipment}</td>
                 <td>{r.technician}</td>
                 <td>{r.type}</td>

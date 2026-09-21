@@ -45,7 +45,7 @@ export function DashboardHeader({
     <header className="mx-auto max-w-7xl px-4 pt-6 md:px-6">
       <div className="glass rise-in flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-100">
+          <h1 className="text-lg font-semibold text-foreground">
             {pipeName ?? "Ordem de Serviço"}
           </h1>
           <p className="mt-1 flex items-center gap-2 text-xs text-muted">
@@ -63,7 +63,7 @@ export function DashboardHeader({
           <button
             onClick={handleRefresh}
             disabled={loading || demo}
-            className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
             title={demo ? "Configure o Pipefy para habilitar a sincronização manual" : undefined}
           >
             {loading ? "Sincronizando…" : "Atualizar agora"}
@@ -72,7 +72,7 @@ export function DashboardHeader({
       </div>
       {demo && (
         <div className="glass rise-in mt-3 rounded-2xl p-3 text-sm text-muted">
-          Exibindo <strong className="text-slate-200">dados de demonstração</strong>. Configure
+          Exibindo <strong className="text-foreground">dados de demonstração</strong>. Configure
           PIPEFY_PIPE_ID e PIPEFY_API_TOKEN para conectar ao seu pipe real.
         </div>
       )}

@@ -39,7 +39,7 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
 
       <main className="mx-auto max-w-7xl space-y-5 px-4 pt-6 md:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-100">Visão geral</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Visão geral</h2>
           <PeriodFilter value={period} onChange={setPeriod} months={months} />
         </div>
 

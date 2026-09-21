@@ -11,7 +11,7 @@ export function EquipmentTable({
 }) {
   return (
     <div className="glass rise-in rounded-2xl p-4">
-      <h3 className="mb-3 text-sm font-medium text-slate-200">{title}</h3>
+      <h3 className="mb-3 text-sm font-medium text-foreground">{title}</h3>
       <div className="overflow-x-auto">
         <table>
           <thead>
@@ -27,7 +27,7 @@ export function EquipmentTable({
           <tbody>
             {rows.map((r) => (
               <tr key={r.equipment}>
-                <td className="font-medium text-slate-200">{r.equipment}</td>
+                <td className="font-medium text-foreground">{r.equipment}</td>
                 <td>{r.os}</td>
                 <td>{r.failures}</td>
                 <td>{r.downtime.toFixed(1)}</td>

@@ -6,15 +6,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0b1220",
-        surface: "#111a2e",
-        border: "#22304a",
-        primary: "#22d3ee",
-        success: "#34d399",
-        warning: "#fbbf24",
-        destructive: "#f87171",
-        info: "#818cf8",
-        muted: "#94a3b8",
+        // Paleta Lamiex: fundo claro/creme, marca laranja, texto quase-preto quente.
+        background: "#faf7f3",
+        surface: "#ffffff",
+        border: "#e5e0d8",
+        foreground: "#211d19",
+        primary: "#e8681f",
+        "primary-dark": "#c7570f",
+        success: "#1e9e52",
+        warning: "#b9770e",
+        destructive: "#dc3b30",
+        info: "#2e76bf",
+        muted: "#8d8378",
       },
       borderRadius: {
         xl: "1rem",
