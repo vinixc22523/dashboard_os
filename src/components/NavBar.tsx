@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Painel" },
@@ -32,13 +33,16 @@ export function NavBar() {
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-primary/10 text-primary"
-                  : "text-muted hover:bg-black/5 hover:text-foreground"
+                  : "text-muted hover:bg-foreground/5 hover:text-foreground"
               }`}
             >
               {link.label}
             </Link>
           );
         })}
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   );

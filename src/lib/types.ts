@@ -50,6 +50,7 @@ export type MaintenanceRecord = {
   title: string;
   equipment: string;
   technician: string;
+  technicians: string[];
   type: string;
   priority: string;
   stopped: boolean;

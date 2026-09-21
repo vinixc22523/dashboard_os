@@ -39,6 +39,28 @@ function isYes(value: string) {
   return v === "sim" || v === "s" || v === "true" || v === "yes";
 }
 
+// O campo "técnico" no Pipefy permite selecionar mais de uma pessoa, e o valor
+// bruto do card chega como uma string de array JSON, ex.: '["Glauco Savioli",
+// "Marco Carneiro "]'. Esta função separa isso em nomes individuais, já
+// aparados, para que cada técnico possa ser contabilizado separadamente em vez
+// de a combinação inteira virar um "técnico" novo.
+export function parseTechnicianNames(raw: string): string[] {
+  const trimmed = raw.trim();
+  if (!trimmed) return ["Não informado"];
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const names = parsed.map((v) => String(v).trim()).filter(Boolean);
+        return names.length ? names : ["Não informado"];
+      }
+    } catch {
+      // valor não era um JSON válido: segue para o fallback abaixo.
+    }
+  }
+  return [trimmed];
+}
+
 // Converte os cards crus do Pipefy em registros de manutenção, tentando
 // localizar os campos certos mesmo que o nome exato do campo no Pipefy varie
 // (ex.: "Equipamento", "Máquina/Ativo", "Local").
@@ -51,9 +73,11 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
         (k) => k.includes("ativo"),
         (k) => k.includes("local"),
       ]) || "Não informado";
-    const technician =
+    const technicianRaw =
       pick(card, [(k) => k.includes("tecnic"), (k) => k.includes("responsav")]) ||
       "Não informado";
+    const technicians = parseTechnicianNames(technicianRaw);
+    const technician = technicians.join(", ");
     const type = pick(card, [(k) => k.includes("tipo")]) || "Não informado";
     const priority = pick(card, [(k) => k.includes("priorid")]) || "Não informado";
     const stopped = isYes(pick(card, [(k) => k.includes("parada")]));
@@ -87,6 +111,7 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       title: card.title,
       equipment,
       technician,
+      technicians,
       type,
       priority,
       stopped,
@@ -189,6 +214,46 @@ export function metricsBy(
 
 export function equipmentBreakdown(records: MaintenanceRecord[]): EquipmentMetric[] {
   return metricsBy(records, (r) => r.equipment);
+}
+
+// Igual a metricsBy, mas um mesmo registro pode entrar em mais de um grupo ao
+// mesmo tempo (ex.: uma OS com dois técnicos responsáveis conta um serviço
+// para cada um deles, em vez de virar um grupo "combinado" novo).
+export function metricsByMulti(
+  records: MaintenanceRecord[],
+  keysFn: (record: MaintenanceRecord) => string[],
+): EquipmentMetric[] {
+  const groups = new Map<string, MaintenanceRecord[]>();
+  for (const record of records) {
+    const keys = new Set(keysFn(record).map((k) => k.trim()).filter(Boolean));
+    for (const key of keys.size ? keys : ["Não informado"]) {
+      const list = groups.get(key) ?? [];
+      list.push(record);
+      groups.set(key, list);
+    }
+  }
+
+  // Mesma base de horas de todo o conjunto original (não duplicado), para que
+  // a disponibilidade continue comparável entre pessoas/grupos.
+  const sharedOperatingHours = computeMaintenanceKpis(records).operatingHours;
+
+  return [...groups.entries()]
+    .map(([equipment, list]) => {
+      const kpis = computeMaintenanceKpis(list, sharedOperatingHours);
+      return {
+        equipment,
+        os: list.length,
+        failures: kpis.failures,
+        downtime: kpis.downtime,
+        mttr: kpis.mttr,
+        availability: kpis.availability,
+      };
+    })
+    .sort((a, b) => b.os - a.os);
+}
+
+export function technicianBreakdown(records: MaintenanceRecord[]): EquipmentMetric[] {
+  return metricsByMulti(records, (r) => r.technicians);
 }
 
 export function volumeSeries(records: MaintenanceRecord[], days = 30) {

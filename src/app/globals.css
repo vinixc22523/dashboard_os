@@ -4,18 +4,47 @@
 
 :root {
   color-scheme: light;
+  /* Paleta Lamiex (tema claro) */
+  --color-background: 250 247 243;
+  --color-surface: 255 255 255;
+  --color-border: 229 224 216;
+  --color-foreground: 33 29 25;
+  --color-primary: 232 104 31;
+  --color-primary-dark: 199 87 15;
+  --color-success: 30 158 82;
+  --color-warning: 185 119 14;
+  --color-destructive: 220 59 48;
+  --color-info: 46 118 191;
+  --color-muted: 141 131 120;
+}
+
+:root.dark {
+  color-scheme: dark;
+  /* Mesma identidade Lamiex, ajustada para fundo escuro sem perder contraste */
+  --color-background: 27 23 18;
+  --color-surface: 36 31 25;
+  --color-border: 58 51 41;
+  --color-foreground: 237 233 227;
+  --color-primary: 237 122 61;
+  --color-primary-dark: 245 148 96;
+  --color-success: 61 191 122;
+  --color-warning: 214 158 64;
+  --color-destructive: 240 100 90;
+  --color-info: 96 160 224;
+  --color-muted: 158 150 140;
 }
 
 body {
-  background: #faf7f3;
-  color: #211d19;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
   min-height: 100vh;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .glass {
-  background: #ffffff;
-  border: 1px solid #e5e0d8;
-  box-shadow: 0 1px 2px rgba(33, 29, 25, 0.04), 0 8px 24px rgba(33, 29, 25, 0.05);
+  background: rgb(var(--color-surface));
+  border: 1px solid rgb(var(--color-border));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .rise-in {
@@ -46,15 +75,15 @@ td {
 }
 
 thead th {
-  color: #8d8378;
+  color: rgb(var(--color-muted));
   font-weight: 500;
-  border-bottom: 1px solid #e5e0d8;
+  border-bottom: 1px solid rgb(var(--color-border));
 }
 
 tbody tr {
-  border-bottom: 1px solid #f0ece5;
+  border-bottom: 1px solid rgb(var(--color-border) / 0.6);
 }
 
 tbody tr:hover {
-  background: #faf7f3;
+  background: rgb(var(--color-foreground) / 0.04);
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recharts";
-
-const COLORS = ["#e8681f", "#2e76bf", "#1e9e52", "#b9770e", "#dc3b30", "#7a5c3e"];
+import { useTheme } from "./ThemeProvider";
+import { getChartColors } from "@/lib/chart-theme";
 
 export function BreakdownChart({
   title,
@@ -11,6 +11,9 @@ export function BreakdownChart({
   title: string;
   data: { name: string; value: number }[];
 }) {
+  const { theme } = useTheme();
+  const colors = getChartColors(theme === "dark");
+
   return (
     <div className="glass rise-in rounded-2xl p-4">
       <h3 className="mb-3 text-sm font-medium text-foreground">{title}</h3>
@@ -19,18 +22,19 @@ export function BreakdownChart({
           <PieChart>
             <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
               {data.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                <Cell key={i} fill={colors.pie[i % colors.pie.length]} />
               ))}
             </Pie>
             <Tooltip
               contentStyle={{
-                background: "#ffffff",
-                border: "1px solid #e5e0d8",
+                background: colors.tooltipBg,
+                border: `1px solid ${colors.tooltipBorder}`,
                 borderRadius: 12,
                 fontSize: 12,
+                color: theme === "dark" ? "#ede9e3" : "#211d19",
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 12, color: "#8d8378" }} />
+            <Legend wrapperStyle={{ fontSize: 12, color: colors.tick }} />
           </PieChart>
         </ResponsiveContainer>
       </div>

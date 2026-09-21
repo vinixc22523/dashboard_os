@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { DashboardPayload } from "@/lib/types";
-import { toRecords, metricsBy } from "@/lib/kpis";
+import { toRecords, technicianBreakdown } from "@/lib/kpis";
 import { filterByPeriod, listMonths } from "@/lib/period";
 import { PeriodFilter } from "./PeriodFilter";
 import { EquipmentTable } from "./EquipmentTable";
@@ -14,7 +14,11 @@ export function TecnicosView({ payload }: { payload: DashboardPayload }) {
   const allRecords = useMemo(() => toRecords(payload.snapshot?.cards ?? []), [payload.snapshot]);
   const months = useMemo(() => listMonths(allRecords), [allRecords]);
   const records = useMemo(() => filterByPeriod(allRecords, period), [allRecords, period]);
-  const byTechnician = useMemo(() => metricsBy(records, (r) => r.technician), [records]);
+  const byTechnician = useMemo(() => technicianBreakdown(records), [records]);
+  const totalTechnicianOs = useMemo(
+    () => byTechnician.reduce((sum, t) => sum + t.os, 0),
+    [byTechnician],
+  );
 
   return (
     <main className="mx-auto max-w-7xl space-y-5 px-4 py-6 md:px-6">
@@ -29,7 +33,7 @@ export function TecnicosView({ payload }: { payload: DashboardPayload }) {
           label="Média de OS por técnico"
           value={
             byTechnician.length
-              ? (records.length / byTechnician.length).toFixed(1)
+              ? (totalTechnicianOs / byTechnician.length).toFixed(1)
               : "0"
           }
           Icon={Users}

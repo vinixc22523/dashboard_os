@@ -6,18 +6,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paleta Lamiex: fundo claro/creme, marca laranja, texto quase-preto quente.
-        background: "#faf7f3",
-        surface: "#ffffff",
-        border: "#e5e0d8",
-        foreground: "#211d19",
-        primary: "#e8681f",
-        "primary-dark": "#c7570f",
-        success: "#1e9e52",
-        warning: "#b9770e",
-        destructive: "#dc3b30",
-        info: "#2e76bf",
-        muted: "#8d8378",
+        // Paleta Lamiex via variáveis CSS (definidas em globals.css), para que
+        // o tema claro/escuro troque de valor sem precisar de classes "dark:"
+        // espalhadas pelos componentes.
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        foreground: "rgb(var(--color-foreground) / <alpha-value>)",
+        primary: "rgb(var(--color-primary) / <alpha-value>)",
+        "primary-dark": "rgb(var(--color-primary-dark) / <alpha-value>)",
+        success: "rgb(var(--color-success) / <alpha-value>)",
+        warning: "rgb(var(--color-warning) / <alpha-value>)",
+        destructive: "rgb(var(--color-destructive) / <alpha-value>)",
+        info: "rgb(var(--color-info) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
       },
       borderRadius: {
         xl: "1rem",
