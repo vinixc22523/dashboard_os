@@ -24,7 +24,12 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
   const allRecords = useMemo(() => toRecords(snapshot?.cards ?? []), [snapshot]);
   const months = useMemo(() => listMonths(allRecords), [allRecords]);
   const records = useMemo(() => filterByPeriod(allRecords, period), [allRecords, period]);
+  // Total de OS e Falhas contam tudo (aberto + concluído). Downtime, MTTR,
+  // MTBF e Disponibilidade usam só as OS já concluídas: enquanto uma OS está
+  // aberta, o tempo de parada dela ainda pode mudar, então não entra na média.
   const kpis = useMemo(() => computeMaintenanceKpis(records), [records]);
+  const completedRecords = useMemo(() => records.filter((r) => r.done), [records]);
+  const reliability = useMemo(() => computeMaintenanceKpis(completedRecords), [completedRecords]);
   const lateCount = records.filter((r) => r.late).length;
   const series = useMemo(() => volumeSeries(records), [records]);
 
@@ -59,19 +64,31 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           />
           <StatCard
             label="Downtime total"
-            value={formatHours(kpis.downtime)}
+            value={formatHours(reliability.downtime)}
+            hint="Só OS concluídas"
             Icon={Clock}
             tone="info"
           />
         </section>
 
         <section className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="MTTR" value={formatHours(kpis.mttr)} hint="Tempo médio de reparo" Icon={Activity} tone="info" />
-          <StatCard label="MTBF" value={formatHours(kpis.mtbf)} hint="Tempo médio entre falhas" Icon={Activity} />
+          <StatCard
+            label="MTTR"
+            value={formatHours(reliability.mttr)}
+            hint="Tempo médio de reparo · só OS concluídas"
+            Icon={Activity}
+            tone="info"
+          />
+          <StatCard
+            label="MTBF"
+            value={formatHours(reliability.mtbf)}
+            hint="Tempo médio entre falhas · só OS concluídas"
+            Icon={Activity}
+          />
           <StatCard
             label="Disponibilidade"
-            value={`${kpis.availability}%`}
-            hint={`Base de ${kpis.operatingHours} h de operação`}
+            value={`${reliability.availability}%`}
+            hint={`Base de ${reliability.operatingHours} h de operação · só OS concluídas`}
             Icon={ShieldCheck}
             tone="success"
           />

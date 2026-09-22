@@ -11,7 +11,10 @@ export function EquipmentTable({
 }) {
   return (
     <div className="glass rise-in rounded-2xl p-4">
-      <h3 className="mb-3 text-sm font-medium text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <p className="mb-3 text-xs text-muted">
+        OS e Falhas contam tudo · Downtime, MTTR e Disponibilidade usam só OS concluídas
+      </p>
       <div className="overflow-x-auto">
         <table>
           <thead>

@@ -180,6 +180,11 @@ export function computeMaintenanceKpis(
 
 // Agrupa registros por uma chave qualquer (equipamento, técnico, tipo...) e
 // calcula os mesmos indicadores de manutenção para cada grupo.
+//
+// "OS" e "Falhas" contam todos os chamados (abertos ou concluídos), mas
+// Downtime/MTTR/Disponibilidade só usam os já concluídos: enquanto uma OS
+// está em aberto, o tempo de parada dela ainda pode mudar, então misturá-la
+// nas médias distorceria o indicador.
 export function metricsBy(
   records: MaintenanceRecord[],
   keyFn: (record: MaintenanceRecord) => string,
@@ -192,21 +197,24 @@ export function metricsBy(
     groups.set(key, list);
   }
 
-  // Todos os grupos usam a mesma base de horas (o período coberto pelo
-  // conjunto completo), para que a disponibilidade de cada equipamento ou
-  // técnico seja comparável entre si.
-  const sharedOperatingHours = computeMaintenanceKpis(records).operatingHours;
+  // Todos os grupos usam a mesma base de horas (o período coberto pelas OS
+  // concluídas do conjunto completo), para que a disponibilidade de cada
+  // equipamento ou técnico seja comparável entre si.
+  const sharedOperatingHours = computeMaintenanceKpis(records.filter((r) => r.done)).operatingHours;
 
   return [...groups.entries()]
     .map(([equipment, list]) => {
-      const kpis = computeMaintenanceKpis(list, sharedOperatingHours);
+      const reliability = computeMaintenanceKpis(
+        list.filter((r) => r.done),
+        sharedOperatingHours,
+      );
       return {
         equipment,
         os: list.length,
-        failures: kpis.failures,
-        downtime: kpis.downtime,
-        mttr: kpis.mttr,
-        availability: kpis.availability,
+        failures: list.filter((r) => r.stopped).length,
+        downtime: reliability.downtime,
+        mttr: reliability.mttr,
+        availability: reliability.availability,
       };
     })
     .sort((a, b) => b.os - a.os);
@@ -233,20 +241,24 @@ export function metricsByMulti(
     }
   }
 
-  // Mesma base de horas de todo o conjunto original (não duplicado), para que
-  // a disponibilidade continue comparável entre pessoas/grupos.
-  const sharedOperatingHours = computeMaintenanceKpis(records).operatingHours;
+  // Mesma base de horas de todo o conjunto original (não duplicado), a partir
+  // das OS já concluídas, para que a disponibilidade continue comparável
+  // entre pessoas/grupos.
+  const sharedOperatingHours = computeMaintenanceKpis(records.filter((r) => r.done)).operatingHours;
 
   return [...groups.entries()]
     .map(([equipment, list]) => {
-      const kpis = computeMaintenanceKpis(list, sharedOperatingHours);
+      const reliability = computeMaintenanceKpis(
+        list.filter((r) => r.done),
+        sharedOperatingHours,
+      );
       return {
         equipment,
         os: list.length,
-        failures: kpis.failures,
-        downtime: kpis.downtime,
-        mttr: kpis.mttr,
-        availability: kpis.availability,
+        failures: list.filter((r) => r.stopped).length,
+        downtime: reliability.downtime,
+        mttr: reliability.mttr,
+        availability: reliability.availability,
       };
     })
     .sort((a, b) => b.os - a.os);
