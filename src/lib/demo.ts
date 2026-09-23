@@ -31,6 +31,7 @@ const DEMO_EQUIPMENT = [
 ];
 const DEMO_TECHS = ["Glauco Savioli", "Josemar Rosa", "Marco Carneiro", "Rafael Cruz", "Eduardo Lima"];
 const DEMO_TYPES = ["CORRETIVA", "PREVENTIVA", "MELHORIA", "SETUP"];
+const DEMO_NATURE = ["Corretiva", "Preventiva", "Serviço interno", "Melhoria", "Setup"];
 const DEMO_PRIORITIES = ["Emergencial", "Média", "Baixa"];
 
 function rng(seed: number) {
@@ -62,6 +63,10 @@ export function buildDemoSnapshot(): PipefySnapshot {
     const start = new Date(createdAt.getTime() + Math.floor(rand() * 8) * 3_600_000);
     const durationMin = 10 + Math.floor(rand() * 300);
     const end = new Date(start.getTime() + durationMin * 60_000);
+    // Mesma distribuição do campo real "Manutenção" no Pipefy: a maioria
+    // corretiva, o resto espalhado entre preventiva/interna/melhoria/setup.
+    const nature =
+      rand() > 0.25 ? DEMO_NATURE[0] : DEMO_NATURE[1 + Math.floor(rand() * (DEMO_NATURE.length - 1))];
 
     cards.push({
       id: `demo-${i + 1}`,
@@ -77,6 +82,7 @@ export function buildDemoSnapshot(): PipefySnapshot {
             ? DEMO_TYPES[0]
             : DEMO_TYPES[1 + Math.floor(rand() * (DEMO_TYPES.length - 1))]) as string,
         },
+        { name: "Manutenção", value: nature as string },
         { name: "Prioridade", value: DEMO_PRIORITIES[Math.floor(rand() * DEMO_PRIORITIES.length)] as string },
         { name: "Máquina Parada", value: stopped ? "Sim" : "Não" },
         { name: "Início da Ocorrência", value: start.toISOString() },

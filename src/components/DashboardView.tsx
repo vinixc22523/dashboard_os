@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Activity, AlertTriangle, Clock, Layers, PauseCircle, ShieldCheck } from "lucide-react";
 import type { DashboardPayload } from "@/lib/types";
-import { toRecords, computeMaintenanceKpis } from "@/lib/kpis";
+import { toRecords, computeMaintenanceKpis, isReliabilitySample } from "@/lib/kpis";
 import { filterByPeriod, listMonths } from "@/lib/period";
 import { DashboardHeader } from "./DashboardHeader";
 import { StatCard } from "./StatCard";
@@ -24,12 +24,17 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
   const allRecords = useMemo(() => toRecords(snapshot?.cards ?? []), [snapshot]);
   const months = useMemo(() => listMonths(allRecords), [allRecords]);
   const records = useMemo(() => filterByPeriod(allRecords, period), [allRecords, period]);
-  // Total de OS e Falhas contam tudo (aberto + concluído). Downtime, MTTR,
-  // MTBF e Disponibilidade usam só as OS já concluídas: enquanto uma OS está
-  // aberta, o tempo de parada dela ainda pode mudar, então não entra na média.
+  // Total de OS e Falhas contam tudo (aberto + concluído, qualquer natureza).
+  // Downtime, MTTR, MTBF e Disponibilidade usam só OS corretivas já
+  // concluídas: enquanto uma OS está aberta o tempo de parada ainda pode
+  // mudar, e preventiva/melhoria/setup/serviço interno não são "reparo após
+  // falha", então não entram nessas médias.
   const kpis = useMemo(() => computeMaintenanceKpis(records), [records]);
-  const completedRecords = useMemo(() => records.filter((r) => r.done), [records]);
-  const reliability = useMemo(() => computeMaintenanceKpis(completedRecords), [completedRecords]);
+  const reliabilityRecords = useMemo(() => records.filter(isReliabilitySample), [records]);
+  const reliability = useMemo(
+    () => computeMaintenanceKpis(reliabilityRecords),
+    [reliabilityRecords],
+  );
   const lateCount = records.filter((r) => r.late).length;
   const series = useMemo(() => volumeSeries(records), [records]);
 
@@ -65,7 +70,7 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="Downtime total"
             value={formatHours(reliability.downtime)}
-            hint="Só OS concluídas"
+            hint="Só corretivas concluídas"
             Icon={Clock}
             tone="info"
           />
@@ -75,20 +80,20 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="MTTR"
             value={formatHours(reliability.mttr)}
-            hint="Tempo médio de reparo · só OS concluídas"
+            hint="Tempo médio de reparo · só corretivas concluídas"
             Icon={Activity}
             tone="info"
           />
           <StatCard
             label="MTBF"
             value={formatHours(reliability.mtbf)}
-            hint="Tempo médio entre falhas · só OS concluídas"
+            hint="Tempo médio entre falhas · só corretivas concluídas"
             Icon={Activity}
           />
           <StatCard
             label="Disponibilidade"
             value={`${reliability.availability}%`}
-            hint={`Base de ${reliability.operatingHours} h de operação · só OS concluídas`}
+            hint={`Base de ${reliability.operatingHours} h de operação · só corretivas concluídas`}
             Icon={ShieldCheck}
             tone="success"
           />

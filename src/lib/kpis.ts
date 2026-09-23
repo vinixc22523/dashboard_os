@@ -79,6 +79,14 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
     const technicians = parseTechnicianNames(technicianRaw);
     const technician = technicians.join(", ");
     const type = pick(card, [(k) => k.includes("tipo")]) || "Não informado";
+    // Campo "Manutenção" no Pipefy: Corretiva / Preventiva / Serviço interno /
+    // Melhoria / Setup. É diferente do campo "Tipo de serviço" (Mecânica,
+    // Elétrica, Predial...) acima. Casamento exato (não "includes") porque
+    // "Início da Manutenção" (uma data) também contém a palavra "manutenção" e
+    // não pode ser confundido com este campo.
+    const maintenanceNature =
+      pick(card, [(k) => k === "manutencao"]) || "Não informado";
+    const isCorrective = normalize(maintenanceNature) === "corretiva";
     const priority = pick(card, [(k) => k.includes("priorid")]) || "Não informado";
     const stopped = isYes(pick(card, [(k) => k.includes("parada")]));
     const startRaw = pick(card, [(k) => k.includes("inicio"), (k) => k.includes("abertura")]);
@@ -113,6 +121,8 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       technician,
       technicians,
       type,
+      maintenanceNature,
+      isCorrective,
       priority,
       stopped,
       startedAt: start ? start.toISOString() : null,
@@ -151,6 +161,14 @@ function estimateOperatingHours(records: MaintenanceRecord[]): number {
   return Math.max(spanHours, DEFAULT_OPERATING_HOURS);
 }
 
+// Amostra usada em Downtime/MTTR/MTBF/Disponibilidade: só OS já concluídas
+// (tempo de parada final, não sujeito a mudar) e de natureza corretiva (MTTR/
+// MTBF medem reparo depois de falha; preventiva, melhoria, setup e serviço
+// interno não entram nessa conta).
+export function isReliabilitySample(record: MaintenanceRecord): boolean {
+  return record.done && record.isCorrective;
+}
+
 export function computeMaintenanceKpis(
   records: MaintenanceRecord[],
   operatingHours?: number,
@@ -181,10 +199,9 @@ export function computeMaintenanceKpis(
 // Agrupa registros por uma chave qualquer (equipamento, técnico, tipo...) e
 // calcula os mesmos indicadores de manutenção para cada grupo.
 //
-// "OS" e "Falhas" contam todos os chamados (abertos ou concluídos), mas
-// Downtime/MTTR/Disponibilidade só usam os já concluídos: enquanto uma OS
-// está em aberto, o tempo de parada dela ainda pode mudar, então misturá-la
-// nas médias distorceria o indicador.
+// "OS" e "Falhas" contam todos os chamados (abertos ou concluídos, de
+// qualquer natureza), mas Downtime/MTTR/Disponibilidade só usam OS já
+// concluídas e de natureza corretiva (ver isReliabilitySample).
 export function metricsBy(
   records: MaintenanceRecord[],
   keyFn: (record: MaintenanceRecord) => string,
@@ -198,14 +215,16 @@ export function metricsBy(
   }
 
   // Todos os grupos usam a mesma base de horas (o período coberto pelas OS
-  // concluídas do conjunto completo), para que a disponibilidade de cada
-  // equipamento ou técnico seja comparável entre si.
-  const sharedOperatingHours = computeMaintenanceKpis(records.filter((r) => r.done)).operatingHours;
+  // corretivas concluídas do conjunto completo), para que a disponibilidade
+  // de cada equipamento ou técnico seja comparável entre si.
+  const sharedOperatingHours = computeMaintenanceKpis(
+    records.filter(isReliabilitySample),
+  ).operatingHours;
 
   return [...groups.entries()]
     .map(([equipment, list]) => {
       const reliability = computeMaintenanceKpis(
-        list.filter((r) => r.done),
+        list.filter(isReliabilitySample),
         sharedOperatingHours,
       );
       return {
@@ -242,14 +261,16 @@ export function metricsByMulti(
   }
 
   // Mesma base de horas de todo o conjunto original (não duplicado), a partir
-  // das OS já concluídas, para que a disponibilidade continue comparável
-  // entre pessoas/grupos.
-  const sharedOperatingHours = computeMaintenanceKpis(records.filter((r) => r.done)).operatingHours;
+  // das OS corretivas já concluídas, para que a disponibilidade continue
+  // comparável entre pessoas/grupos.
+  const sharedOperatingHours = computeMaintenanceKpis(
+    records.filter(isReliabilitySample),
+  ).operatingHours;
 
   return [...groups.entries()]
     .map(([equipment, list]) => {
       const reliability = computeMaintenanceKpis(
-        list.filter((r) => r.done),
+        list.filter(isReliabilitySample),
         sharedOperatingHours,
       );
       return {
