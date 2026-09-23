@@ -59,6 +59,9 @@ export type MaintenanceRecord = {
   startedAt: string | null;
   endedAt: string | null;
   downtimeHours: number;
+  maintenanceStartedAt: string | null;
+  maintenanceEndedAt: string | null;
+  repairHours: number;
   createdAt: string;
   phaseName: string;
   done: boolean;

@@ -79,7 +79,7 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="Downtime total"
             value={formatHours(reliability.downtime)}
-            hint="Só corretivas concluídas"
+            hint="Início/Término da Ocorrência · só corretivas concluídas"
             Icon={Clock}
             tone="info"
           />
@@ -89,7 +89,7 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="MTTR"
             value={formatHours(reliability.mttr)}
-            hint="Tempo médio de reparo · só corretivas concluídas"
+            hint="Tempo médio de reparo · Início/Término da Manutenção · só corretivas concluídas"
             Icon={Activity}
             tone="info"
           />

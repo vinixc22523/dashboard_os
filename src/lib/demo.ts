@@ -63,6 +63,13 @@ export function buildDemoSnapshot(): PipefySnapshot {
     const start = new Date(createdAt.getTime() + Math.floor(rand() * 8) * 3_600_000);
     const durationMin = 10 + Math.floor(rand() * 300);
     const end = new Date(start.getTime() + durationMin * 60_000);
+    // Início/Término da Manutenção: janela de trabalho efetivo do técnico,
+    // menor que a ocorrência inteira (existe um tempo de espera antes de
+    // começar o reparo, que a manutenção não conta).
+    const maintenanceWaitMin = Math.floor(rand() * (durationMin * 0.4));
+    const maintenanceDurationMin = Math.max(5, Math.round(durationMin * (0.4 + rand() * 0.4)));
+    const maintenanceStart = new Date(start.getTime() + maintenanceWaitMin * 60_000);
+    const maintenanceEnd = new Date(maintenanceStart.getTime() + maintenanceDurationMin * 60_000);
     // Mesma distribuição do campo real "Manutenção" no Pipefy: a maioria
     // corretiva, o resto espalhado entre preventiva/interna/melhoria/setup.
     const nature =
@@ -87,6 +94,8 @@ export function buildDemoSnapshot(): PipefySnapshot {
         { name: "Máquina Parada", value: stopped ? "Sim" : "Não" },
         { name: "Início da Ocorrência", value: start.toISOString() },
         { name: "Término da Ocorrência", value: end.toISOString() },
+        { name: "Início da Manutenção", value: maintenanceStart.toISOString() },
+        { name: "Término da manutenção", value: maintenanceEnd.toISOString() },
         { name: "Técnico(s)", value: DEMO_TECHS[Math.floor(rand() * DEMO_TECHS.length)] as string },
       ],
       createdAt: createdAt.toISOString(),

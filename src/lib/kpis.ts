@@ -99,9 +99,19 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
     const start = parseDate(startRaw) ?? parseDate(card.createdAt);
     const end = parseDate(endRaw) ?? (card.finishedAt ? parseDate(card.finishedAt) : null);
 
-    // Teto de sanidade: 30 dias contínuos de máquina parada já é um valor
-    // extremo para uma única OS. Isso protege o painel contra erro de
-    // digitação de data no Pipefy (ex.: alguém digitar o ano "0202" em vez
+    // Campos "Início da Manutenção" / "Término da manutenção": marcam quando o
+    // técnico efetivamente começou e terminou o reparo (diferente de
+    // "Início/Término da Ocorrência", que marca o tempo total que a máquina
+    // ficou parada, incluindo espera até alguém atender). O MTTR usa este
+    // campo; o Downtime total continua usando a Ocorrência.
+    const maintenanceStartRaw = pick(card, [(k) => k === "inicio da manutencao"]);
+    const maintenanceEndRaw = pick(card, [(k) => k === "termino da manutencao"]);
+    const maintenanceStart = parseDate(maintenanceStartRaw);
+    const maintenanceEnd = parseDate(maintenanceEndRaw);
+
+    // Teto de sanidade: 30 dias contínuos de máquina parada (ou de reparo) já
+    // é um valor extremo para uma única OS. Isso protege o painel contra erro
+    // de digitação de data no Pipefy (ex.: alguém digitar o ano "0202" em vez
     // de "2026"), que senão inflaria MTTR/downtime para milhares de anos.
     const MAX_PLAUSIBLE_DOWNTIME_HOURS = 24 * 30;
     let downtimeHours = 0;
@@ -109,6 +119,12 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       const diff = (end.getTime() - start.getTime()) / 3_600_000;
       const plausible = diff > 0 && Number.isFinite(diff) && diff <= MAX_PLAUSIBLE_DOWNTIME_HOURS;
       downtimeHours = plausible ? Math.round(diff * 1000) / 1000 : 0;
+    }
+    let repairHours = 0;
+    if (stopped && maintenanceStart && maintenanceEnd) {
+      const diff = (maintenanceEnd.getTime() - maintenanceStart.getTime()) / 3_600_000;
+      const plausible = diff > 0 && Number.isFinite(diff) && diff <= MAX_PLAUSIBLE_DOWNTIME_HOURS;
+      repairHours = plausible ? Math.round(diff * 1000) / 1000 : 0;
     }
 
     const osNumber = card.title.match(/\d+/)?.[0] ?? card.id;
@@ -128,6 +144,9 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       startedAt: start ? start.toISOString() : null,
       endedAt: end ? end.toISOString() : null,
       downtimeHours,
+      maintenanceStartedAt: maintenanceStart ? maintenanceStart.toISOString() : null,
+      maintenanceEndedAt: maintenanceEnd ? maintenanceEnd.toISOString() : null,
+      repairHours,
       createdAt: card.createdAt,
       phaseName: card.phaseName,
       done: card.done,
@@ -182,9 +201,13 @@ export function computeMaintenanceKpis(
   const resolvedOperatingHours = operatingHours ?? estimateOperatingHours(records);
   const totalOs = records.length;
   const failures = records.filter((r) => r.stopped);
+  // Downtime total = tempo que a máquina ficou parada (Início/Término da
+  // Ocorrência): do começo da falha até voltar a funcionar, incluindo espera.
   const downtime = failures.reduce((sum, r) => sum + r.downtimeHours, 0);
-  // MTTR = tempo total de reparo / número de reparos.
-  const mttr = failures.length ? downtime / failures.length : 0;
+  // MTTR = tempo total de reparo / número de reparos, usando Início/Término
+  // da Manutenção (só o tempo de trabalho ativo do técnico, sem a espera).
+  const repairTime = failures.reduce((sum, r) => sum + r.repairHours, 0);
+  const mttr = failures.length ? repairTime / failures.length : 0;
   // MTBF = tempo de operação / número de falhas.
   const mtbf = failures.length ? resolvedOperatingHours / failures.length : resolvedOperatingHours;
   // Disponibilidade = MTBF / (MTBF + MTTR) × 100.
@@ -217,7 +240,9 @@ export function computeMaintenanceKpis(
 //
 // "OS" e "Falhas" contam todos os chamados (abertos ou concluídos, de
 // qualquer natureza), mas Downtime/MTTR/Disponibilidade só usam OS já
-// concluídas e de natureza corretiva (ver isReliabilitySample).
+// concluídas e de natureza corretiva (ver isReliabilitySample). Downtime usa
+// Início/Término da Ocorrência; MTTR (e por consequência a Disponibilidade,
+// que depende do MTTR) usa Início/Término da Manutenção.
 export function metricsBy(
   records: MaintenanceRecord[],
   keyFn: (record: MaintenanceRecord) => string,
