@@ -52,6 +52,8 @@ export type MaintenanceRecord = {
   technician: string;
   technicians: string[];
   type: string;
+  maintenanceNature: string;
+  isCorrective: boolean;
   priority: string;
   stopped: boolean;
   startedAt: string | null;
