@@ -73,6 +73,8 @@ export type MaintenanceKpis = {
   mtbf: number;
   availability: number;
   operatingHours: number;
+  failureRate: number;
+  reliability: number;
 };
 
 export type EquipmentMetric = {

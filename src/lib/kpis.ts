@@ -169,6 +169,12 @@ export function isReliabilitySample(record: MaintenanceRecord): boolean {
   return record.done && record.isCorrective;
 }
 
+// Janela padrão usada pelos indicadores "por mês" (Taxa de falhas e
+// Confiabilidade): 30 dias corridos, tratados como 30 dias de operação
+// contínua, na mesma base de "horas de operação" usada em todo o resto do
+// painel (ver estimateOperatingHours).
+const RELIABILITY_WINDOW_HOURS = 30 * 24;
+
 export function computeMaintenanceKpis(
   records: MaintenanceRecord[],
   operatingHours?: number,
@@ -177,12 +183,20 @@ export function computeMaintenanceKpis(
   const totalOs = records.length;
   const failures = records.filter((r) => r.stopped);
   const downtime = failures.reduce((sum, r) => sum + r.downtimeHours, 0);
+  // MTTR = tempo total de reparo / número de reparos.
   const mttr = failures.length ? downtime / failures.length : 0;
-  // MTBF = tempo disponível / número de falhas.
-  const upTime = Math.max(resolvedOperatingHours - downtime, 0);
-  const mtbf = failures.length ? upTime / failures.length : resolvedOperatingHours;
-  const availability =
-    resolvedOperatingHours > 0 ? (upTime / resolvedOperatingHours) * 100 : 100;
+  // MTBF = tempo de operação / número de falhas.
+  const mtbf = failures.length ? resolvedOperatingHours / failures.length : resolvedOperatingHours;
+  // Disponibilidade = MTBF / (MTBF + MTTR) × 100.
+  const availability = mtbf + mttr > 0 ? (mtbf / (mtbf + mttr)) * 100 : 100;
+  // Taxa de falhas, normalizada para "falhas por mês" (30 dias de operação).
+  const failureRate =
+    resolvedOperatingHours > 0
+      ? (failures.length / resolvedOperatingHours) * RELIABILITY_WINDOW_HOURS
+      : 0;
+  // Confiabilidade = probabilidade de operar 30 dias sem falha, modelo
+  // exponencial: R(t) = e^(−t / MTBF).
+  const reliability = mtbf > 0 ? Math.exp(-RELIABILITY_WINDOW_HOURS / mtbf) * 100 : 100;
   const operatingHoursRounded = Math.round(resolvedOperatingHours);
 
   return {
@@ -193,6 +207,8 @@ export function computeMaintenanceKpis(
     mtbf: Math.round(mtbf * 10) / 10,
     availability: Math.round(availability * 10) / 10,
     operatingHours: operatingHoursRounded,
+    failureRate: Math.round(failureRate * 10) / 10,
+    reliability: Math.round(reliability * 10) / 10,
   };
 }
 

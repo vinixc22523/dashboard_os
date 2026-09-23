@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, AlertTriangle, Clock, Layers, PauseCircle, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Clock,
+  Gauge,
+  Layers,
+  PauseCircle,
+  ShieldCheck,
+  TrendingDown,
+} from "lucide-react";
 import type { DashboardPayload } from "@/lib/types";
 import { toRecords, computeMaintenanceKpis, isReliabilitySample } from "@/lib/kpis";
 import { filterByPeriod, listMonths } from "@/lib/period";
@@ -96,6 +105,23 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
             hint={`Base de ${reliability.operatingHours} h de operação · só corretivas concluídas`}
             Icon={ShieldCheck}
             tone="success"
+          />
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2">
+          <StatCard
+            label="Taxa de falhas"
+            value={`${reliability.failureRate} falhas/mês`}
+            hint="Falhas ÷ horas de operação, normalizado para 30 dias · só corretivas concluídas"
+            Icon={TrendingDown}
+            tone="warning"
+          />
+          <StatCard
+            label="Confiabilidade (30 dias)"
+            value={`${reliability.reliability}%`}
+            hint="Probabilidade de operar 30 dias sem falha (modelo exponencial, com base no MTBF) · só corretivas concluídas"
+            Icon={Gauge}
+            tone="info"
           />
         </section>
 
