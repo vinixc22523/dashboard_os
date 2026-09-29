@@ -33,9 +33,9 @@ export function SetPasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={12}
+          minLength={6}
           className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-          placeholder="Pelo menos 12 caracteres"
+          placeholder="Pelo menos 6 caracteres"
         />
       </div>
       <div>
@@ -48,7 +48,7 @@ export function SetPasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={12}
+          minLength={6}
           className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
           placeholder="Repita a senha"
         />

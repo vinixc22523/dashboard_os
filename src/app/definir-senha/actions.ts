@@ -12,8 +12,8 @@ export async function setPassword(
   const password = String(formData.get("password") || "");
   const confirmPassword = String(formData.get("confirmPassword") || "");
 
-  if (password.length < 12) {
-    return { error: "A senha precisa ter pelo menos 12 caracteres." };
+  if (password.length < 6) {
+    return { error: "A senha precisa ter pelo menos 6 caracteres." };
   }
   if (password !== confirmPassword) {
     return { error: "As senhas não coincidem." };
