@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import { LogoutButton } from "./LogoutButton";
 
 const LINKS = [
   { href: "/", label: "Painel" },
@@ -12,8 +13,14 @@ const LINKS = [
   { href: "/relatorios", label: "Relatórios" },
 ];
 
+// Telas de autenticação não mostram a barra de navegação (não faz sentido
+// oferecer "Sair" ou links para o painel antes de estar logado).
+const HIDDEN_ON = ["/login", "/definir-senha"];
+
 export function NavBar() {
   const pathname = usePathname();
+
+  if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
     <nav className="sticky top-0 z-10 border-b border-border bg-surface">
@@ -40,8 +47,9 @@ export function NavBar() {
             </Link>
           );
         })}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
+          <LogoutButton />
         </div>
       </div>
     </nav>
