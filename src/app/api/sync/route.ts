@@ -1,15 +1,26 @@
 import { NextResponse } from "next/server";
 import { runSync } from "@/lib/dashboard-data";
+import { supabaseServer } from "@/lib/supabase/server";
+import { canSync } from "@/lib/sync-access";
 
-// Sincronização manual, disparada pelo botão "Atualizar" no header.
-// Protegida por SYNC_SECRET: sem esse header, qualquer pessoa que descubra a
-// URL poderia forçar chamadas ao Pipefy.
+// Sincronização manual, disparada pelo botão "Atualizar agora" no header.
+// Autorizada de duas formas:
+//   1. Usuário logado cujo e-mail está na lista SYNC_ALLOWED_EMAILS.
+//   2. Chamada externa com o header x-sync-secret igual a SYNC_SECRET.
+// Sem nenhuma das duas, qualquer pessoa que descubra a URL poderia forçar
+// chamadas ao Pipefy.
 export async function POST(request: Request) {
   const secret = process.env.SYNC_SECRET;
-  if (secret) {
-    const header = request.headers.get("x-sync-secret");
-    if (header !== secret) {
-      return NextResponse.json({ ok: false, error: "Não autorizado." }, { status: 401 });
+  const hasValidSecret = Boolean(secret) && request.headers.get("x-sync-secret") === secret;
+
+  if (!hasValidSecret) {
+    const supabase = await supabaseServer();
+    const { data } = await supabase.auth.getUser();
+    if (!canSync(data.user?.email)) {
+      return NextResponse.json(
+        { ok: false, error: "Você não tem permissão para sincronizar." },
+        { status: 403 },
+      );
     }
   }
 
