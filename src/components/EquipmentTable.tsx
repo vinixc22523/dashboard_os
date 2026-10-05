@@ -14,7 +14,7 @@ export function EquipmentTable({
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
       <p className="mb-3 text-xs text-muted">
         OS e Falhas contam tudo · Downtime usa Início/Término da Ocorrência, MTTR usa
-        Início/Término da Manutenção · ambos só corretivas concluídas
+        Início/Término da Manutenção · ambos só corretivas concluídas de máquinas
       </p>
       <div className="overflow-x-auto">
         <table>

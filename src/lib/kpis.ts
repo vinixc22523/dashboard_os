@@ -78,6 +78,17 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       "Não informado";
     const technicians = parseTechnicianNames(technicianRaw);
     const technician = technicians.join(", ");
+    // "Equipamento ou Local" é uma lista fechada de máquinas/equipamentos
+    // cadastrados (MAQ01, moinhos, routers, esteiras...) mais a opção "Outro",
+    // usada para portas, iluminação, salas e demais itens que não são máquina
+    // (o texto livre vai em "Outro equipamento ou local"). USINAGEM (GERAL) é
+    // uma área, não uma máquina. Se o pipe não tiver esse campo (ex.: dados de
+    // demonstração), todas as OS são tratadas como de máquina.
+    const equipmentListRaw = pick(card, [(k) => k === "equipamento ou local"]);
+    const equipmentListKey = normalize(equipmentListRaw);
+    const isMachine =
+      !equipmentListRaw ||
+      !["outro", "nao informado", "usinagem (geral)"].includes(equipmentListKey);
     const type = pick(card, [(k) => k.includes("tipo")]) || "Não informado";
     // Campo "Manutenção" no Pipefy: Corretiva / Preventiva / Serviço interno /
     // Melhoria / Setup. É diferente do campo "Tipo de serviço" (Mecânica,
@@ -139,6 +150,7 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       type,
       maintenanceNature,
       isCorrective,
+      isMachine,
       priority,
       stopped,
       startedAt: start ? start.toISOString() : null,
@@ -183,9 +195,10 @@ function estimateOperatingHours(records: MaintenanceRecord[]): number {
 // Amostra usada em Downtime/MTTR/MTBF/Disponibilidade: só OS já concluídas
 // (tempo de parada final, não sujeito a mudar) e de natureza corretiva (MTTR/
 // MTBF medem reparo depois de falha; preventiva, melhoria, setup e serviço
-// interno não entram nessa conta).
+// interno não entram nessa conta) e feitas em máquinas (OS de "Outro" local,
+// como portas, iluminação e salas, ficam de fora).
 export function isReliabilitySample(record: MaintenanceRecord): boolean {
-  return record.done && record.isCorrective;
+  return record.done && record.isCorrective && record.isMachine;
 }
 
 // Janela padrão usada pelos indicadores "por mês" (Taxa de falhas e

@@ -79,7 +79,7 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="Downtime total"
             value={formatHours(reliability.downtime)}
-            hint="Início/Término da Ocorrência · só corretivas concluídas"
+            hint="Início/Término da Ocorrência · só corretivas concluídas de máquinas"
             Icon={Clock}
             tone="info"
           />
@@ -89,20 +89,20 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="MTTR"
             value={formatHours(reliability.mttr)}
-            hint="Tempo médio de reparo · Início/Término da Manutenção · só corretivas concluídas"
+            hint="Tempo médio de reparo · Início/Término da Manutenção · só corretivas concluídas de máquinas"
             Icon={Activity}
             tone="info"
           />
           <StatCard
             label="MTBF"
             value={formatHours(reliability.mtbf)}
-            hint="Tempo médio entre falhas · só corretivas concluídas"
+            hint="Tempo médio entre falhas · só corretivas concluídas de máquinas"
             Icon={Activity}
           />
           <StatCard
             label="Disponibilidade"
             value={`${reliability.availability}%`}
-            hint={`Base de ${reliability.operatingHours} h de operação · só corretivas concluídas`}
+            hint={`Base de ${reliability.operatingHours} h de operação · só corretivas concluídas de máquinas`}
             Icon={ShieldCheck}
             tone="success"
           />
@@ -112,14 +112,14 @@ export function DashboardView({ payload }: { payload: DashboardPayload }) {
           <StatCard
             label="Taxa de falhas"
             value={`${reliability.failureRate} falhas/mês`}
-            hint="Falhas ÷ horas de operação, normalizado para 30 dias · só corretivas concluídas"
+            hint="Falhas ÷ horas de operação, normalizado para 30 dias · só corretivas concluídas de máquinas"
             Icon={TrendingDown}
             tone="warning"
           />
           <StatCard
             label="Confiabilidade (30 dias)"
             value={`${reliability.reliability}%`}
-            hint="Probabilidade de operar 30 dias sem falha (modelo exponencial, com base no MTBF) · só corretivas concluídas"
+            hint="Probabilidade de operar 30 dias sem falha (modelo exponencial, com base no MTBF) · só corretivas concluídas de máquinas"
             Icon={Gauge}
             tone="info"
           />
