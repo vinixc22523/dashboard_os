@@ -98,6 +98,7 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
     const maintenanceNature =
       pick(card, [(k) => k === "manutencao"]) || "Não informado";
     const isCorrective = normalize(maintenanceNature) === "corretiva";
+    const isPreventive = normalize(maintenanceNature) === "preventiva";
     const priority = pick(card, [(k) => k.includes("priorid")]) || "Não informado";
     const stopped = isYes(pick(card, [(k) => k.includes("parada")]));
     const startRaw = pick(card, [(k) => k.includes("inicio"), (k) => k.includes("abertura")]);
@@ -150,6 +151,7 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
       type,
       maintenanceNature,
       isCorrective,
+      isPreventive,
       isMachine,
       priority,
       stopped,

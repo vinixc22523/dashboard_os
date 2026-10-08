@@ -54,6 +54,7 @@ export type MaintenanceRecord = {
   type: string;
   maintenanceNature: string;
   isCorrective: boolean;
+  isPreventive: boolean;
   isMachine: boolean;
   priority: string;
   stopped: boolean;
