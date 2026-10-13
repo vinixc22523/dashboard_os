@@ -73,10 +73,33 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
         (k) => k.includes("ativo"),
         (k) => k.includes("local"),
       ]) || "Não informado";
+    // Junta os nomes de TODOS os campos de técnico preenchidos (ex.: "Técnico"
+    // e "Técnico envolvido"), sem repetir a mesma pessoa. Se nenhum estiver
+    // preenchido, cai para o campo "Responsável".
+    const technicianFields = card.fields.filter(
+      (f) => normalize(f.name).includes("tecnic") && String(f.value ?? "").trim(),
+    );
     const technicianRaw =
-      pick(card, [(k) => k.includes("tecnic"), (k) => k.includes("responsav")]) ||
-      "Não informado";
-    const technicians = parseTechnicianNames(technicianRaw);
+      technicianFields.length > 0
+        ? ""
+        : pick(card, [(k) => k.includes("responsav")]) || "Não informado";
+    const technicians: string[] = [];
+    const seenTechnicians = new Set<string>();
+    const rawSources = technicianFields.length
+      ? technicianFields.map((f) => String(f.value))
+      : [technicianRaw];
+    for (const source of rawSources) {
+      for (const name of parseTechnicianNames(source)) {
+        const key = normalize(name);
+        if (seenTechnicians.has(key)) continue;
+        seenTechnicians.add(key);
+        technicians.push(name);
+      }
+    }
+    if (technicians.length > 1) {
+      const idx = technicians.indexOf("Não informado");
+      if (idx >= 0) technicians.splice(idx, 1);
+    }
     const technician = technicians.join(", ");
     // "Equipamento ou Local" é uma lista fechada de máquinas/equipamentos
     // cadastrados (MAQ01, moinhos, routers, esteiras...) mais a opção "Outro",
