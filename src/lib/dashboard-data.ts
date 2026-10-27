@@ -3,7 +3,54 @@ import { supabaseAdmin } from "./supabase-admin";
 import { fetchPipeSnapshot } from "./pipefy";
 import { toRecords, computeMaintenanceKpis } from "./kpis";
 import { buildDemoSnapshot } from "./demo";
-import type { DashboardPayload, PipefySnapshot } from "./types";
+import type { DashboardPayload, PipefyCard, PipefySnapshot } from "./types";
+
+// O Pipefy às vezes devolve o campo "Responsável" vazio ("[]") para OS antigas
+// (aconteceu em 21/10/2026, quando ~300 OS perderam o nome). Para não perder o
+// histórico de quem atendeu cada OS, copiamos o Responsável do snapshot anterior
+// para toda OS que veio sem ele agora. OS que já têm "Técnico envolvido" ou um
+// Responsável preenchido não são alteradas.
+const RESPONSAVEL = "responsavel";
+
+function normName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function isEmptyFieldValue(value: unknown) {
+  const v = String(value ?? "").trim();
+  return v === "" || v === "[]";
+}
+
+function carryForwardResponsavel(
+  cards: PipefyCard[],
+  previousCards: PipefyCard[],
+): PipefyCard[] {
+  const previousById = new Map<string, string>();
+  for (const prev of previousCards) {
+    const field = prev.fields.find(
+      (f) => normName(f.name) === RESPONSAVEL && !isEmptyFieldValue(f.value),
+    );
+    if (field) previousById.set(prev.id, String(field.value));
+  }
+  if (previousById.size === 0) return cards;
+
+  return cards.map((card) => {
+    const hasResponsavel = card.fields.some(
+      (f) => normName(f.name) === RESPONSAVEL && !isEmptyFieldValue(f.value),
+    );
+    if (hasResponsavel) return card;
+    const old = previousById.get(card.id);
+    if (!old) return card;
+    return {
+      ...card,
+      fields: [
+        ...card.fields.filter((f) => normName(f.name) !== RESPONSAVEL),
+        { name: "Responsável", value: old },
+      ],
+    };
+  });
+}
+
 
 function mapSnapshotRow(row: Record<string, unknown>): PipefySnapshot {
   return {
@@ -93,7 +140,23 @@ export async function runSync(source: "manual" | "scheduled"): Promise<PipefySna
   const admin = supabaseAdmin();
 
   try {
-    const { pipeName, phases, cards } = await fetchPipeSnapshot(pipeId, token);
+    const fetched = await fetchPipeSnapshot(pipeId, token);
+    const { pipeName, phases } = fetched;
+
+    // Snapshot anterior (último com sucesso), usado para não perder o
+    // Responsável de OS antigas quando o Pipefy devolve o campo vazio.
+    const { data: previous } = await admin
+      .from("pipefy_snapshots")
+      .select("cards")
+      .eq("status", "success")
+      .order("synced_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const cards = carryForwardResponsavel(
+      fetched.cards,
+      ((previous?.cards ?? []) as PipefyCard[]),
+    );
+
     const records = toRecords(cards);
     const maintenanceKpis = computeMaintenanceKpis(records);
     const total = cards.length;
