@@ -76,9 +76,13 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
     // Junta os nomes de TODOS os campos de técnico preenchidos (ex.: "Técnico"
     // e "Técnico envolvido"), sem repetir a mesma pessoa. Se nenhum estiver
     // preenchido, cai para o campo "Responsável".
-    const technicianFields = card.fields.filter(
-      (f) => normalize(f.name).includes("tecnic") && String(f.value ?? "").trim(),
-    );
+    // Campo de caixa de seleção vazio chega como "[]": não conta como preenchido,
+    // para não bloquear o fallback para o Responsável.
+    const technicianFields = card.fields.filter((f) => {
+      if (!normalize(f.name).includes("tecnic")) return false;
+      const v = String(f.value ?? "").trim();
+      return v !== "" && v !== "[]";
+    });
     const technicianRaw =
       technicianFields.length > 0
         ? ""
