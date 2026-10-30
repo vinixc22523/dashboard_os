@@ -1,3 +1,4 @@
+import { TECHNICIAN_OVERRIDES } from "./technician-overrides";
 import type {
   EquipmentMetric,
   MaintenanceKpis,
@@ -88,10 +89,16 @@ export function toRecords(cards: PipefyCard[]): MaintenanceRecord[] {
         ? ""
         : pick(card, [(k) => k.includes("responsav")]) || "Não informado";
     const technicians: string[] = [];
+    const overrideNames =
+      technicianFields.length === 0 && (["nao informado", "[]", ""].includes(normalize(technicianRaw).trim()))
+        ? TECHNICIAN_OVERRIDES[card.id]
+        : undefined;
     const seenTechnicians = new Set<string>();
     const rawSources = technicianFields.length
       ? technicianFields.map((f) => String(f.value))
-      : [technicianRaw];
+      : overrideNames
+        ? [JSON.stringify(overrideNames)]
+        : [technicianRaw];
     for (const source of rawSources) {
       for (const name of parseTechnicianNames(source)) {
         const key = normalize(name);
